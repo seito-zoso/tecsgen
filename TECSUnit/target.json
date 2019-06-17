@@ -26,12 +26,12 @@
     "function":"send",
     "argument":[[1,2],2],
     "exp_val":1
-  },
-  "target5":{ /* 構造体のテスト */
-    "cell":"Target3",
-    "entry":"eTarget3",
-    "function":"sendStruct",
-    "argument":[["struct","data:1","name:aoki"]],
-    "exp_val":1
   }
+  // "target5":{ /* 構造体のテスト */
+  //   "cell":"Target3",
+  //   "entry":"eTarget3",
+  //   "function":"sendStruct",
+  //   "argument":[["data:1","name:aoki"]],
+  //   "exp_val":1
+  // }
 }

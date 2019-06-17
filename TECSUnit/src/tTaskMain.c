@@ -16,8 +16,8 @@
  * function_path_tmp char_t*          VAR_function_path_tmp
  * arg_num          int8_t           VAR_arg_num
  * exp_type         char_t*          VAR_exp_type
- * arg              char_t [16][16]  VAR_arg
- * arg_type         char_t [16][16]  VAR_arg_type
+ * arg              char_t [32][128] VAR_arg
+ * arg_type         char_t [32][128] VAR_arg_type
  * find_entry       int8_t           VAR_find_entry
  * find_func        int8_t           VAR_find_func
  *
@@ -35,7 +35,7 @@
  *   ER             cTECSInfo_findCelltype( const char_t* namespace_path, Descriptor( nTECSInfo_sCelltypeInfo )* celltypeDesc );
  *   ER             cTECSInfo_findCell( const char_t* namespace_path, Descriptor( nTECSInfo_sCellInfo )* cellDesc );
  *   ER             cTECSInfo_findRawEntryDescriptor( const char_t* namespace_path, Descriptor( nTECSInfo_sRawEntryDescriptorInfo )* rawEntryDescDesc, Descriptor( nTECSInfo_sEntryInfo )* entryDesc );
- *   ER             cTECSInfo_findRawEntryDescriptor_unsafe( const char_t* namespace_path, void** rawDesc );
+ *   ER             cTECSInfo_findRawEntryDescriptor_unsafe( const char_t* namespace_path, uint32_t subsc, void** rawDesc );
  * call port: cNSInfo signature: nTECSInfo_sNamespaceInfo context:task optional:true
  *   bool_t     is_cNSInfo_joined()                     check if joined
  *   ER             cNSInfo_getName( char_t* name, int_t max_len );
@@ -412,13 +412,13 @@ print_param( CELLCB *p_cellcb, Descriptor( nTECSInfo_sParamInfo ) paramDesc, int
     cParamInfo_getTypeInfo( &typeInfo );
     cTypeInfo_set_descriptor( typeInfo );
     cTypeInfo_getName( VAR_arg_type[num], ATTR_ARG_NAME_LEN );
-    printf("%s\n",VAR_arg_type[num]);
+    // printf("%s\n",VAR_arg_type[num]);
 
     // TODO
     if( strstr( VAR_arg_type[num], "struct") != NULL ){
-        n = 0;
+        // n = 0;
         // n = cTypeInfo_getNMember();
-        printf("%d\n",n);
+        // printf("%d\n",n);
 
         // for(i = 0; i < n; i++){
         //     cTypeInfo_getMemberInfo( i, &memberInfo );
