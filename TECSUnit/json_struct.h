@@ -56,5 +56,6 @@ struct tecsunit_obj{
     float32_t  mem_float32_t_buf[64];
     double64_t mem_double64_t_buf[32];
     char_t     mem_char_t_buf[256];
+
   } data;
 };

@@ -10,7 +10,7 @@
     "cell":"Target3",
     "entry":"eTarget3",
     "function":"sendMessage",
-    "argument":["Hello!",7],
+    "argument":["hi!",7],
     "exp_val":1
   },
   "target3":{ /* out指定子のテスト */
