@@ -83,6 +83,8 @@ region rTEMP{
     };
 };
 generate( TECSUnitPlugin, rTEMP::TaskMain, "" );
+generate( JSMNPlugin, rTEMP::TaskMain, "" );
+
 region rTEMP{
 
     cell tTECSUnit TECSUnit {

@@ -62,6 +62,7 @@ class TECSUnitPlugin < CellPlugin
   def gen_cdl_file file
     # tTECSUnit の定義を生成する
     file.print <<EOT
+
 celltype tTECSUnit {
     entry sTECSUnit eUnit;
     /*----- TECSInfo -----*/

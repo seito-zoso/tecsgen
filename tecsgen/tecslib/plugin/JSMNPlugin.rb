@@ -60,19 +60,46 @@ class JSMNPlugin < CellPlugin
   end
 
   def gen_cdl_file file
-    # tJSMN の定義を生成する
     file.print <<EOT
 celltype tJSMN {
-
-
+  entry sJSMN eJSMN;
+  attr {
+    int16_t LEN = 1024; // jsonをまるごと読み込んだ時のサイズ
+    int16_t TMP_LEN = 32; // argの値を一時的に格納
+  /* json keywords：変更する場合はここを変える */
+    char_t *key_cell = "cell";
+    char_t *key_entry = "entry";
+    char_t *key_function = "function";
+    char_t *key_arg = "argument";
+    char_t *key_exp = "exp_val";
+  };
+  var {
+    [size_is(LEN)]
+      char_t  *json_str;
+    [size_is(TMP_LEN)]
+      char_t  *tmp_str;
+    int counter = 0; // targetの数を数える
+  };
 };
 EOT
   end
-
   #===  受け口関数の本体コードを生成（頭部と末尾は別途出力）
   #ct_name:: Symbol    (プラグインで生成された) セルタイプ名 ．Symbol として送られてくる
   def gen_ep_func_body( file, b_singleton, ct_name, global_ct_name, sig_name, ep_name, func_name, func_global_name, func_type, paramSet )
-    # tTECSUnit の受け口関数のセルタイプコード (C言語) を生成する
+    # tJSMN の受け口関数のセルタイプコード (C言語) を生成する
+    if func_name.to_s == "json_open" then
+      print_json_open( file, Namespace.get_root )
+    end
+    if func_name.to_s == "json_parse_path" then
+      print_parse_path( file, Namespace.get_root )
+    end
+    if func_name.to_s == "json_parse_arg" then
+      print_parse_arg( file, Namespace.get_root )
+    end
+
+  end
+
+  def print_json_open( file, namespace )
     file.print <<EOT
   CELLCB  *p_cellcb;
   if (VALID_IDX(idx)) {
@@ -82,8 +109,147 @@ EOT
     /* エラー処理コードをここに記述します */
   } /* end if VALID_IDX(idx) */
 
-EOT
+  /* ここに処理本体を記述します #_TEFB_# */
+    char str_tmp[N];
+    int co_flag = 0, co_start, i, j;
+    FILE *fp;
 
+    if( ( fp = fopen("target.json", "r") ) == NULL ){
+        printf("Failed to open\\n");
+        return -1;
+    }
+    while( fgets( str_tmp , N, fp ) != NULL ) {
+        co_start = 0;
+        for( i = 0; i < N -1; i++ ){
+            if( str_tmp[i] == '/' && str_tmp[i+1] == '/' && !co_flag ){
+                str_tmp[i] = '\\0';
+                break;
+            }
+            if( str_tmp[i] == '/' && str_tmp[i+1] == '*' && !co_flag ){
+                co_start = i;
+                co_flag = 1;
+            }
+            if( str_tmp[i] == '*' && str_tmp[i+1] == '/' && co_flag ){
+                for(j = 0; str_tmp[(i+2)+j] != '\\0'; j++ ){
+                    str_tmp[co_start + j] = str_tmp[(i+2)+j];
+                }
+                str_tmp[co_start + j] = '\\0';
+                i = co_start;
+                co_flag = 0;
+            }
+        }
+        if( co_flag && co_start > 0 ){
+            str_tmp[co_start] = '\\0';
+            strcat( VAR_json_str, str_tmp );
+        }
+        if( str_tmp[0] != '\\0' && str_tmp[0] != '\\n' && !co_flag ){
+            strcat( VAR_json_str, str_tmp );
+        }
+    }
+    fclose( fp );
+    return 0;
+EOT
+  end
+
+  def print_parse_path( file, namespace )
+    file.print <<EOT
+ER    ercd = E_OK;
+  CELLCB  *p_cellcb;
+  if (VALID_IDX(idx)) {
+    p_cellcb = GET_CELLCB(idx);
+  }
+  else {
+    return(E_ID);
+  } /* end if VALID_IDX(idx) */
+
+  /* ここに処理本体を記述します #_TEFB_# */
+    int r, i, j, k, l, m, array_size, arg_size;
+    jsmn_parser p;
+    jsmntok_t t[128]; /* We expect no more than 128 tokens */
+    char target_path[10];
+    char str_tmp[8];
+
+    sprintf( target_path, "target%d", target_num );
+
+    jsmn_init(&p);
+    r = jsmn_parse( &p, VAR_json_str, strlen(VAR_json_str), t, sizeof(t)/sizeof(t[0]) );
+    if(r < 0){
+        printf( "Failed to parse JSON: %d\\n", r );
+        return -1;
+    }
+  /* Assume the top-level element is an object */
+    if( r < 1 || t[0].type != JSMN_OBJECT ){
+        printf( "Object expected\\n" );
+        return -1;
+    }
+
+  /* Loop over all keys of the root object */
+    for( l = 1; l < r; l++ ){
+        if( jsoneq( VAR_json_str, &t[l], target_path ) == 0 ){
+            if( t[l+1].type != JSMN_OBJECT ){
+                printf("Object expected for target\\n");
+                return -1;
+            }
+            i = l + 2;
+            for( k = 0; k < t[l+1].size; k++ ){
+                if( jsoneq( VAR_json_str, &t[i], ATTR_key_cell ) == 0 ){
+                    strcpy_n( c_path, t[i+1].end-t[i+1].start, VAR_json_str + t[i+1].start );
+                    i += 2;
+                }else if( jsoneq( VAR_json_str, &t[i], ATTR_key_entry ) == 0 ){
+                    strcpy_n( e_path, t[i+1].end-t[i+1].start, VAR_json_str + t[i+1].start );
+                    i += 2;
+                }else if( jsoneq( VAR_json_str, &t[i], ATTR_key_function ) == 0 ){
+                    strcpy_n( f_path, t[i+1].end-t[i+1].start, VAR_json_str + t[i+1].start );
+                    i += 2;
+                }else if( jsoneq( VAR_json_str, &t[i], ATTR_key_arg ) == 0 ) {
+                    i += 1;
+                    arg_size = t[i].size;
+                    for( j = 0; j < arg_size; j++ ){
+                        i += 1; // iは各要素を指す
+                        if( t[i].type == JSMN_ARRAY ){
+                            array_size =  t[i].size;
+                            for( m = 0; m < array_size; m++ ){
+                                i += 1; // 配列の中身に注目
+                            }
+                        }
+                    }
+                    i += 1; // 最後には配列を抜ける
+                }else if( jsoneq( VAR_json_str, &t[i], ATTR_key_exp ) == 0 ){
+                    i += 2; /* ignore */
+                }else{
+                    printf( "Unexpected key: %.*s\\n", t[i].end-t[i].start, VAR_json_str + t[i].start );
+                    return -1;
+                }
+            }
+            return 0;
+        }
+    }
+    return 1;
+EOT
+  end
+
+  def print_parse_arg( file, namespace )
+    struct_arr = []
+
+    namespace.travers_all_signature{ |signature|
+      file.print <<EOT
+      #{signature.get_name}
+EOT
+      signature.each_param{ |decl, paramDecl|
+
+        param = paramDecl.get_type.get_type_str
+        if param.include?("struct") then
+          if !struct_arr.include?("#{param}") then
+            struct_arr << param
+          end
+        elsif param.include?("const") then
+        end
+
+        file.print <<EOT
+          #{param}
+EOT
+     }
+    }
   end
 
   #=== 後ろの CDL コードを生成
@@ -94,7 +260,37 @@ EOT
   end
 
   def gen_preamble( file, b_singleton, ct_name, global_ct_name )
-
+    file.print <<EOT
+static int
+jsoneq( const char *json, jsmntok_t *tok, const char *s);
+static void
+strcpy_n( char_t *str1, int num, const char *str2 );
+EOT
   end
+
+  def gen_postamble( file, b_singleton, ct_name, global_ct_name )
+    file.print <<EOT
+static int
+jsoneq(const char *json, jsmntok_t *tok, const char *s)
+{
+    if( tok->type == JSMN_STRING && (int) strlen(s) == tok->end - tok->start
+        && strncmp(json + tok->start, s, tok->end - tok->start) == 0 ){
+        return 0;
+    }
+    return -1;
+}
+
+static void
+strcpy_n( char_t *str1, int num, const char *str2 )
+{
+    int i;
+    for(i = 0; i < num; i++){
+        str1[i] = str2[i];
+    }
+    str1[num] = '\\0';
+}
+EOT
+  end
+
 end
 
