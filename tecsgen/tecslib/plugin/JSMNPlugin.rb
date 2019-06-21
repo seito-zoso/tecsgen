@@ -229,28 +229,284 @@ EOT
   end
 
   def print_parse_arg( file, namespace )
-    struct_arr = []
+    char_list = []
+    struct_list = []
+    arr_list = []
+    out_list = []
+    num_list = []
+    typedef_list = []
 
     namespace.travers_all_signature{ |signature|
-      file.print <<EOT
+      if signature.get_namespace_path.to_s =~ /nTECSInfo::/ || signature.get_namespace_path.to_s =~ /::sTask.*/ || signature.get_namespace_path.to_s =~ /::sAccessor/ || signature.get_namespace_path.to_s =~ /::sTECSUnit/ || signature.get_namespace_path.to_s =~ /::sJSMN/ || signature.get_namespace_path.to_s =~ /::s.*Kernel/ || signature.get_namespace_path.to_s =~ /::s.*Semaphore/ || signature.get_namespace_path.to_s =~ /::s.*Eventflag/ || signature.get_namespace_path.to_s =~ /::s.*Dataqueue/ then
+      else
+        file.print <<EOT
       #{signature.get_name}
 EOT
-      signature.each_param{ |decl, paramDecl|
+        signature.each_param{ |decl, paramDecl|
 
-        param = paramDecl.get_type.get_type_str
-        if param.include?("struct") then
-          if !struct_arr.include?("#{param}") then
-            struct_arr << param
+          param = paramDecl.get_type.get_type_str
+          if param.include?("*") then
+            if param.include?("const") then
+              if param.include?("char") then # [in]: char*型
+                if !char_list.include?(param) then
+                  # char_list << param.sub(/\*/, '_buf').sub('const ', '') # 被っていなければ追加
+                  char_list << param
+                end
+              elsif param.include?("struct") then # [in]: struct*型
+                if !struct_list.include?(param) then
+                  # struct_list << param.sub(/\*/, '_buf').sub('const ', '')
+                  struct_list << param
+                end
+              else
+                if !arr_list.include?(param) then # [in]: num*,typedef*型
+                  # arr_list << param.sub(/\*/, '_buf').sub('const ', '')
+                  arr_list << param
+                end
+              end
+            else
+              if !out_list.include?(param) then # [out]: 型
+                out_list << param
+              end
+            end
+          elsif param =~ /char_*t*/ || param =~ /u*int\d*_*t*/ || param =~ /u*long_*t*/ || param =~ /u*short_*t*/ || param =~ /float\d*_*t*/ || param =~ /double\d_*t*/ then
+            if !num_list.include?(param) then
+              num_list << param # [in]: num型
+            end
+          else
+            if !typedef_list.include?(param) then
+              typedef_list << param # [in]: typedef型
+            end
           end
-        elsif param.include?("const") then
-        end
-
-        file.print <<EOT
+          file.print <<EOT
           #{param}
 EOT
-     }
+        }
+      end
+    }
+
+    file.print <<EOT
+  ER    ercd = E_OK;
+  CELLCB  *p_cellcb;
+  if (VALID_IDX(idx)) {
+    p_cellcb = GET_CELLCB(idx);
+  }
+  else {
+    return(E_ID);
+  } /* end if VALID_IDX(idx) */
+
+  /* ここに処理本体を記述します #_TEFB_# */
+    int r, i, j, k, l, m, arg_size, array_size;
+    jsmn_parser p;
+    jsmntok_t t[128]; /* We expect no more than 128 tokens */
+    char target_path[10];
+
+    sprintf( target_path, "target%d", target_num );
+
+    jsmn_init(&p);
+    r = jsmn_parse( &p, VAR_json_str, strlen(VAR_json_str), t, sizeof(t)/sizeof(t[0]) );
+    if(r < 0){
+        printf( "Failed to parse JSON: %d\\n", r );
+        return -1;
+    }
+  /* Assume the top-level element is an object */
+    if( r < 1 || t[0].type != JSMN_OBJECT ){
+        printf( "Object expected\\n" );
+        return -1;
+    }
+
+  /* Loop over all keys of the root object */
+    for( l = 1; l < r; l++ ){
+        if( jsoneq( VAR_json_str, &t[l], target_path ) == 0 ){
+            if( t[l+1].type != JSMN_OBJECT ){
+                printf("Object expected for target\\n");
+                return -1;
+            }
+            i = l + 2;
+            for( k = 0; k < t[l+1].size; k++ ){
+                if( jsoneq( VAR_json_str, &t[i], ATTR_key_cell ) == 0 ){
+                    i += 2; /* ignore */
+                }else if( jsoneq( VAR_json_str, &t[i], ATTR_key_entry ) == 0 ){
+                    i += 2; /* ignore */
+                }else if( jsoneq( VAR_json_str, &t[i], ATTR_key_function ) == 0 ){
+                    i += 2; /* ignore */
+                }else if( jsoneq( VAR_json_str, &t[i], ATTR_key_arg ) == 0 ) {
+                    if(t[i+1].type != JSMN_ARRAY){
+                        continue; /* We expect groups to be an array of strings */
+                    }
+                    i += 1;
+                    arg_size = t[i].size;
+                    *arg_num = arg_size; // 引数の数をTaskMainに渡す
+                    for( j = 0; j < arg_size; j++ ){
+                        i += 1; // iは各要素を指す
+                        if( t[i].type == JSMN_ARRAY ){
+                            array_size =  t[i].size;
+                            for( m = 0; m < array_size; m++ ){
+                                i += 1; // 配列の中身に注目
+                                strcpy_n( VAR_tmp_str, t[i].end - t[i].start, VAR_json_str + t[i].start );
+EOT
+    print_arr_list( file, arr_list, out_list )
+                                # if( !strcmp(arguments[j].type,"const int*") ){
+                                #     arguments[j].data.mem_int_buf[m] = atoi( VAR_tmp_str );
+                                # }else if( !strcmp(arguments[j].type,"const short*") ){
+                                #     arguments[j].data.mem_short_buf[m] = atoi( VAR_tmp_str );
+                                # }else if( !strcmp(arguments[j].type,"int*") ){
+                                # }else if( !strcmp(arguments[j].type,"short*") ){
+                                # }else if( !strcmp(arguments[j].type,"long*") ){
+                                # }else if( !strcmp(arguments[j].type,"float*") ){
+                                # }else if( !strcmp(arguments[j].type,"double*") ){
+    file.print <<EOT
+                                }else{
+                                    printf("Arg %d is not array type\\n", j+1 );
+                                    return -1;
+                                }
+                            }
+                        }else if( t[i].type == JSMN_STRING ){
+                            /* strは以下に追加していきます */
+EOT
+    print_char_list( file, char_list )
+                            # if( !strcmp(arguments[j].type,"const char*") ){
+                            #     strcpy_n( arguments[j].data.mem_char_buf, t[i].end - t[i].start, VAR_json_str + t[i].start );
+                            # }else if( !strcmp(arguments[j].type,"const char_t*") ){
+                            #     strcpy_n( arguments[j].data.mem_char_t_buf, t[i].end - t[i].start, VAR_json_str + t[i].start );
+                            # }else if( !strcmp(arguments[j].type,"char*") ){
+                            # }else if( !strcmp(arguments[j].type,"char_t*") ){
+    file.print <<EOT
+                            }else{
+                                printf("Arg %d is not string type\\n", j+1 );
+                                return -1;
+                            }
+                        }else if( t[i].type == JSMN_PRIMITIVE ){
+                            strcpy_n( VAR_tmp_str, t[i].end - t[i].start, VAR_json_str + t[i].start );
+EOT
+    print_num_list( file, num_list )
+                            # if( !strcmp(arguments[j].type,"char") ){
+                            #     arguments[j].data.mem_char = atoi( VAR_tmp_str );
+                            # }else if( !strcmp(arguments[j].type,"int") ){
+                            #     arguments[j].data.mem_int = atoi( VAR_tmp_str );
+    file.print <<EOT
+                            }else{
+                                printf("Arg %d is not numeric type\\n", j+1 );
+                                return -1;
+                            }
+                        }else if( t[i].type == JSMN_UNDEFINED ){
+                            printf( "Unexpected value: %.*s\\n", t[i].end - t[i].start, VAR_json_str + t[i].start );
+                        }else{
+                            printf( "Wrong Type: %.*s\\n", t[i].end - t[i].start, VAR_json_str + t[i].start );
+                        }
+                    }
+                    i += 1; // 最後には配列を抜ける
+                /* 期待値 */
+                }else if( jsoneq( VAR_json_str, &t[i], ATTR_key_exp ) == 0 ){
+                    if( t[i+1].type == JSMN_ARRAY ){
+                            array_size =  t[i+1].size;
+                            for( m = 0; m < array_size; m++ ){
+                                i += 1; // 配列の中身に注目
+                                strcpy_n( VAR_tmp_str, t[i+1].end - t[i+1].start, VAR_json_str + t[i+1].start );
+                                # if( !strcmp(exp_val->type,"const int*") ){
+                                #     arguments[j].data.mem_int_buf[m] = atoi( VAR_tmp_str );
+                                # }
+                                }else{
+                                  printf("Arg %d is not array type\\n", j+1 );
+                                  return -1;
+                                }
+                    else if( t[i+1].type == JSMN_STRING ){
+                        # if( !strcmp(exp_val->type,"char") ){
+                        #     strcpy_n( exp_val->data.mem_char_buf, t[i+1].end - t[i+1].start, VAR_json_str + t[i+1].start );
+                        # }
+                          }else{
+                              printf("Arg %d is not string type\\n", j+1 );
+                              return -1;
+                          }
+                    }else if( t[i+1].type == JSMN_PRIMITIVE ){
+                        strcpy_n( VAR_tmp_str, t[i+1].end - t[i+1].start, VAR_json_str + t[i+1].start );
+                        # if( !strcmp(exp_val->type,"double") ){
+                        #     exp_val->data.mem_double = atof( VAR_tmp_str );
+                        # }else if( !strcmp(exp_val->type,"int") ){
+                        #     exp_val->data.mem_int = atoi( VAR_tmp_str );
+                        # }
+                          }else{
+                              printf("Arg %d is not string type\\n", j+1 );
+                              return -1;
+                          }
+                    }else if( t[i+1].type == JSMN_UNDEFINED ){
+                        printf( "Unexpected value: %.*s\\n", t[i+1].end - t[i+1].start, VAR_json_str + t[i+1].start );
+                    }else{
+                        printf( "Wrong Type: %.*s\\n", t[i+1].end - t[i+1].start, VAR_json_str + t[i+1].start );
+                    }
+                    i += 2;
+                }else{
+                    printf( "Unexpected key: %.*s\\n", t[i].end-t[i].start, VAR_json_str + t[i].start );
+                    return -1;
+                }
+            }
+            VAR_counter += 1;
+            if( VAR_counter >= t[0].size ){
+                return 2;
+            }
+            return 0;
+        }
+    }
+    return 1;
+EOT
+        p char_list
+        p struct_list
+        p arr_list
+        p out_list
+        p num_list
+        p typedef_list
+  end
+
+  def print_arr_list( file, arr_list, out_list )
+    arr_list.each_with_index { |obj, idx|
+      if obj.include?("double") && obj.include?("float") then
+        if idx == 0 then
+          file.print <<EOT
+                                if( !strcmp(arguments[j].type,"#{obj}") ){
+                                    arguments[j].data.mem_#{obj.sub(/\*/, '_buf').sub('const ', '')}[m] = atof( VAR_tmp_str );
+EOT
+        else
+          file.print <<EOT
+                                }else if( !strcmp(arguments[j].type,"#{obj}") ){
+                                    arguments[j].data.mem_#{obj.sub(/\*/, '_buf').sub('const ', '')}[m] = atof( VAR_tmp_str );
+EOT
+        end
+      else
+        if idx == 0 then
+          file.print <<EOT
+                                if( !strcmp(arguments[j].type,"#{obj}") ){
+                                    arguments[j].data.#{obj.sub(/\*/, '_buf').sub('const ', '')}[m] = atoi( VAR_tmp_str );
+EOT
+        else
+          file.print <<EOT
+                                }else if( !strcmp(arguments[j].type,"#{obj}") ){
+                                    arguments[j].data.#{obj.sub(/\*/, '_buf').sub('const ', '')}[m] = atoi( VAR_tmp_str );
+EOT
+        end
+      end
+    }
+    out_list.each_with_index{ |obj, idx|
+      if arr_list.empty? then
+        file.print <<EOT
+                                if( !strcmp(arguments[j].type,"#{obj}") ){
+EOT
+      else
+        file.print <<EOT
+                                }else if( !strcmp(arguments[j].type,"#{obj}") ){
+EOT
+      end
     }
   end
+
+
+  def print_char_list( file, char_list )
+  end
+  def print_num_list( file, num_list )
+  end
+  def print_struct_list( file, struct_list )
+  end
+  def print_typedef_list( file, typedef_list )
+  end
+
 
   #=== 後ろの CDL コードを生成
   #プラグインの後ろの CDL コードを生成
