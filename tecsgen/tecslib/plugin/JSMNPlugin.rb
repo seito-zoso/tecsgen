@@ -234,7 +234,6 @@ EOT
     arr_list = []
     out_list = []
     num_list = []
-    typedef_list = []
 
     ret_type_list = []
 
@@ -270,13 +269,9 @@ EOT
                 out_list << param
               end
             end
-          elsif param =~ /char_*t*/ || param =~ /u*int\d*_*t*/ || param =~ /u*long_*t*/ || param =~ /u*short_*t*/ || param =~ /float\d*_*t*/ || param =~ /double\d_*t*/ then
-            if !num_list.include?(param) then
-              num_list << param # [in]: num型
-            end
           else
-            if !typedef_list.include?(param) then
-              typedef_list << param # [in]: typedef型
+            if !num_list.include?(param) then
+              num_list << param # [in]: num型,typedef型
             end
           end
 
@@ -412,12 +407,11 @@ EOT
     }
     return 1;
 EOT
-        p char_list
-        p struct_list
-        p arr_list
-        p out_list
-        p num_list
-        p typedef_list
+        puts "char_list #{char_list}"
+        puts "struct_list #{struct_list}"
+        puts "arr_list #{arr_list}"
+        puts "out_list #{out_list}"
+        puts "num_list #{num_list}"
   end
 
   def print_arr_list( file, arr_list, out_list )
@@ -485,24 +479,24 @@ EOT
         if idx == 0 then
           file.print <<EOT
                             if( !strcmp(arguments[j].type,"#{obj}") ){
-                                arguments[j].data.mem_#{obj} = atof( VAR_tmp_str );
+                                arguments[j].data.mem_#{obj.downcase} = atof( VAR_tmp_str );
 EOT
         else
           file.print <<EOT
                             }else if( !strcmp(arguments[j].type,"#{obj}") ){
-                                arguments[j].data.mem_#{obj} = atof( VAR_tmp_str );
+                                arguments[j].data.mem_#{obj.downcase} = atof( VAR_tmp_str );
 EOT
         end
       else
         if idx == 0 then
           file.print <<EOT
                             if( !strcmp(arguments[j].type,"#{obj}") ){
-                                arguments[j].data.mem_#{obj} = atoi( VAR_tmp_str );
+                                arguments[j].data.mem_#{obj.downcase} = atoi( VAR_tmp_str );
 EOT
         else
           file.print <<EOT
                             }else if( !strcmp(arguments[j].type,"#{obj}") ){
-                                arguments[j].data.mem_#{obj} = atoi( VAR_tmp_str );
+                                arguments[j].data.mem_#{obj.downcase} = atoi( VAR_tmp_str );
 EOT
         end
       end
@@ -510,8 +504,7 @@ EOT
   end
   def print_struct_list( file, struct_list )
   end
-  def print_typedef_list( file, typedef_list )
-  end
+
   def print_ret_type_list( file, ret_type_list )
     ret_type_list.each_with_index{ |obj, idx|
       if obj.include?("double") || obj.include?("float") then
