@@ -258,7 +258,11 @@ EOT
             char_count += 1
           end
         else
-          paramSet.concat("arguments[#{i}].data.mem_#{param.sub(/\*/, '_buf').sub('const ', '').downcase}")
+          if param.include?("struct") then
+            paramSet.concat("&arguments[#{i}].data.mem_#{param.sub(/\*/, '_buf').sub('const ', '').sub('struct ', '').downcase}")
+          else
+            paramSet.concat("arguments[#{i}].data.mem_#{param.sub(/\*/, '_buf').sub('const ', '').downcase}")
+          end
         end
         i = i + 1
       else # 2つ目以降
@@ -274,12 +278,16 @@ EOT
             char_count += 1
           end
         else
-          paramSet.concat(", arguments[#{i}].data.mem_#{param.sub(/\*/, '_buf').sub('const ', '').downcase}")
+          if param.include?("struct") then
+            paramSet.concat(", &arguments[#{i}].data.mem_#{param.sub(/\*/, '_buf').sub('const ', '').sub('struct ', '').downcase}")
+          else
+            paramSet.concat(", arguments[#{i}].data.mem_#{param.sub(/\*/, '_buf').sub('const ', '').downcase}")
+          end
         end
         i = i + 1
       end
       # exp_valの追加
-      exp_val = "exp_val->" + "data.mem_#{decl.get_type.get_type_str.sub(/\*/, '_buf').sub('const ', '').downcase}"
+      exp_val = "exp_val->" + "data.mem_#{decl.get_type.get_type_str.sub(/\*/, '_buf').sub('const ', '').sub('struct ', '').downcase}"
     }
     # 最後のシグニチャ関数を出力
     if flag then # シグニチャ関数の１つ目

@@ -415,18 +415,18 @@ print_param( CELLCB *p_cellcb, Descriptor( nTECSInfo_sParamInfo ) paramDesc, int
     // printf("%s\n",VAR_arg_type[num]);
 
     // TODO
-    if( strstr( VAR_arg_type[num], "struct") != NULL ){
-        // n = 0;
-        n = cTypeInfo_getNMember();
-        printf("%d\n",n);
+    // if( strstr( VAR_arg_type[num], "struct") != NULL ){
+    //     // n = 0;
+    //     n = cTypeInfo_getNMember();
+    //     printf("%d\n",n);
 
-        // for(i = 0; i < n; i++){
-        //     cTypeInfo_getMemberInfo( i, &memberInfo );
-        //     cVarDeclInfo_set_descriptor( memberInfo );
-        //     cVarDeclInfo_getName( tmp, 8 );
-        //     printf("%s\n",tmp);
-        // }
-    }
+    //     // for(i = 0; i < n; i++){
+    //     //     cTypeInfo_getMemberInfo( i, &memberInfo );
+    //     //     cVarDeclInfo_set_descriptor( memberInfo );
+    //     //     cVarDeclInfo_getName( tmp, 8 );
+    //     //     printf("%s\n",tmp);
+    //     // }
+    // }
 
 }
 

@@ -1,9 +1,9 @@
 struct tecsunit_obj{
-  char    type[16]; /* TECSInfoにより型名を格納します */
+  char    type[32]; /* TECSInfoにより型名を格納します */
   union{
 /* 新しい型はここに追加してください */
     ER mem_er;
-
+    struct target_struct mem_target_struct_buf;
 /* 以下は参照：https://tecs-docs.readthedocs.io/ja/latest/tecs/CDLref_type.html?highlight=%E5%9E%8B */
     /* 組込み型：範囲が不明瞭 */
     char    mem_char;

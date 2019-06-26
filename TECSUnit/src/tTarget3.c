@@ -32,7 +32,7 @@
  * global_name:  tTarget3_eTarget3_send
  * oneway:       false
  * #[</ENTRY_FUNC>]# */
-int
+ER
 eTarget3_send(CELLIDX idx, const int8_t* buf, int8_t len)
 {
 	ER		ercd = E_OK;
@@ -57,7 +57,7 @@ eTarget3_send(CELLIDX idx, const int8_t* buf, int8_t len)
  * global_name:  tTarget3_eTarget3_sendMessage
  * oneway:       false
  * #[</ENTRY_FUNC>]# */
-int
+ER
 eTarget3_sendMessage(CELLIDX idx, const char_t* buf, int8_t len)
 {
 	CELLCB	*p_cellcb;
@@ -79,7 +79,7 @@ eTarget3_sendMessage(CELLIDX idx, const char_t* buf, int8_t len)
  * global_name:  tTarget3_eTarget3_sendStruct
  * oneway:       false
  * #[</ENTRY_FUNC>]# */
-int
+ER
 eTarget3_sendStruct(CELLIDX idx, const struct target_struct* data)
 {
 	CELLCB	*p_cellcb;
@@ -102,7 +102,7 @@ eTarget3_sendStruct(CELLIDX idx, const struct target_struct* data)
  * global_name:  tTarget3_eTarget3_receiveMessage
  * oneway:       false
  * #[</ENTRY_FUNC>]# */
-int
+ER
 eTarget3_receiveMessage(CELLIDX idx, char_t* buf, int8_t len)
 {
 	CELLCB	*p_cellcb;
@@ -116,6 +116,28 @@ eTarget3_receiveMessage(CELLIDX idx, char_t* buf, int8_t len)
 	/* ここに処理本体を記述します #_TEFB_# */
 	strcpy( buf, "test" );
 	return;
+}
+
+/* #[<ENTRY_FUNC>]# eTarget3_checkER
+ * name:         eTarget3_checkER
+ * global_name:  tTarget3_eTarget3_checkER
+ * oneway:       false
+ * #[</ENTRY_FUNC>]# */
+ER
+eTarget3_checkER(CELLIDX idx, ER eroor)
+{
+	ER		ercd = E_OK;
+	CELLCB	*p_cellcb;
+	if (VALID_IDX(idx)) {
+		p_cellcb = GET_CELLCB(idx);
+	}
+	else {
+		return(E_ID);
+	} /* end if VALID_IDX(idx) */
+
+	/* ここに処理本体を記述します #_TEFB_# */
+
+	return(ercd);
 }
 
 /* #[<POSTAMBLE>]#

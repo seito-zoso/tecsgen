@@ -210,6 +210,18 @@ ER    ercd = E_OK;
                             array_size =  t[i].size;
                             for( m = 0; m < array_size; m++ ){
                                 i += 1; // 配列の中身に注目
+                                if( t[i].size > 1 ){
+                                  i += t[i].size;
+                                }
+                            }
+                        }
+                        if( t[i].type == JSMN_OBJECT ){
+                            array_size =  t[i].size;
+                            for( m = 0; m < array_size; m++){
+                                i += 2; // member
+                                if( t[i].size > 1 ){
+                                  i += t[i].size;
+                                }
                             }
                         }
                     }
@@ -233,7 +245,9 @@ EOT
 
     struct_list = [] # 構造体名
     struct_mem = [] # 構造体のメンバ(tmp)
+    struct_mem_type = [] # 構造体のメンバのタイプ(tmp)
     struct_mem_list = [] # 構造体メンバのリスト
+    struct_mem_type_list = [] # 構造体メンバのタイプリスト
 
     arr_list = []
     out_list = []
@@ -256,9 +270,12 @@ EOT
               elsif param.include?("struct") then # [in]: struct*型
                 paramDecl.get_type.get_type.get_members_decl.get_items.each { |decl|
                   struct_mem << decl.get_name.to_s
+                  struct_mem_type << decl.get_type.get_type_str
                 }
                 struct_mem_list << struct_mem
+                struct_mem_type_list << struct_mem_type
                 struct_mem = [] # リセット
+                struct_mem_type = []
                 if !struct_list.include?(param) then
                   # struct_list << param.sub(/\*/, '_buf').sub('const ', '')
                   struct_list << param
@@ -344,7 +361,7 @@ p struct_mem_list
                     for( j = 0; j < arg_size; j++ ){
                         i += 1; // iは各要素を指す
                         if( t[i].type == JSMN_OBJECT ){
-                            if( strstr( arguments[j].type, "struct" ) == null ){
+                            if( strstr( arguments[j].type, "const struct" ) == NULL ){
                               printf("Arg %d is not struct type\\n", j+1 );
                               return -1;
                             }
@@ -353,7 +370,7 @@ p struct_mem_list
                                 i += 1; // objの中身Tag名に注目
                                 strcpy_n( VAR_tmp_str, t[i].end - t[i].start, VAR_json_str + t[i].start );
 EOT
-    print_struct_list( file, struct_list, struct_mem_list )
+    print_struct_list( file, struct_list, struct_mem_list, struct_mem_type_list )
     file.print <<EOT
                             }
                         }else if( t[i].type == JSMN_ARRAY ){
@@ -521,7 +538,64 @@ EOT
       end
     }
   end
-  def print_struct_list( file, struct_list, struct_mem_list )
+
+  def print_struct_list( file, struct_list, struct_mem_list, struct_mem_type_list )
+    struct_list.each_with_index{ |obj, idx|
+      if idx == 0 then
+        file.print <<EOT
+                                if( !strcmp(arguments[j].type,"#{obj}") ){
+EOT
+      else
+        file.print <<EOT
+                                else if( !strcmp(arguments[j].type,"#{obj}") ){
+EOT
+      end
+      struct_mem_list[idx].each_with_index{ |mem, idx2|
+        if idx2 == 0 then
+          file.print <<EOT
+                                    if( !strcmp( VAR_tmp_str, "#{mem}" ) ){
+                                        i += 1;
+EOT
+        else
+          file.print <<EOT
+                                    }else if( !strcmp( VAR_tmp_str, "#{mem}" ) ){
+                                        i += 1;
+EOT
+        end
+
+        if struct_mem_type_list[idx][idx2].include?("char") then
+          file.print <<EOT
+                                        strcpy_n( arguments[j].data.mem_#{obj.sub(/\*/, '_buf').sub('const ', '').sub('struct ', '')}.#{mem}, t[i].end - t[i].start, VAR_json_str + t[i].start );
+EOT
+        elsif struct_mem_type_list[idx][idx2].include?("const") && struct_mem_type_list[idx][idx2].include?("*") then
+          file.print <<EOT
+                                        printf("Not support Array type in struct\n");
+                                        return -1;
+EOT
+        elsif struct_mem_type_list[idx][idx2].include?("double") || struct_mem_type_list[idx][idx2].include?("float") then
+          file.print <<EOT
+                                        strcpy_n( VAR_tmp_str, t[i].end - t[i].start, VAR_json_str + t[i].start );
+                                        arguments[j].data.mem_#{obj.sub(/\*/, '_buf').sub('const ', '').sub('struct ', '')}.#{mem} = atof( VAR_tmp_str );
+EOT
+        else
+          file.print <<EOT
+                                        strcpy_n( VAR_tmp_str, t[i].end - t[i].start, VAR_json_str + t[i].start );
+                                        arguments[j].data.mem_#{obj.sub(/\*/, '_buf').sub('const ', '').sub('struct ', '')}.#{mem} = atoi( VAR_tmp_str );
+EOT
+        end
+      }
+        file.print <<EOT
+                                    }else{
+                                       printf("Member %s cannot found \\n", VAR_tmp_str );
+                                       return -1;
+                                    }
+                                }else{
+                                  printf("Struct %s cannot found\\n", arguments[j].type);
+                                  return -1;
+                                }
+EOT
+
+    }
   end
 
   def print_ret_type_list( file, ret_type_list )
@@ -552,6 +626,9 @@ EOT
         end
       end
     }
+    file.print <<EOT
+                        }
+EOT
   end
 
   #=== 後ろの CDL コードを生成
