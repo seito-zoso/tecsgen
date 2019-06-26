@@ -230,7 +230,11 @@ EOT
 
   def print_parse_arg( file, namespace )
     char_list = []
-    struct_list = []
+
+    struct_list = [] # 構造体名
+    struct_mem = [] # 構造体のメンバ(tmp)
+    struct_mem_list = [] # 構造体メンバのリスト
+
     arr_list = []
     out_list = []
     num_list = []
@@ -240,11 +244,7 @@ EOT
     namespace.travers_all_signature{ |signature|
       if signature.get_namespace_path.to_s =~ /nTECSInfo::/ || signature.get_namespace_path.to_s =~ /::sTask.*/ || signature.get_namespace_path.to_s =~ /::sAccessor/ || signature.get_namespace_path.to_s =~ /::sTECSUnit/ || signature.get_namespace_path.to_s =~ /::sJSMN/ || signature.get_namespace_path.to_s =~ /::s.*Kernel/ || signature.get_namespace_path.to_s =~ /::s.*Semaphore/ || signature.get_namespace_path.to_s =~ /::s.*Eventflag/ || signature.get_namespace_path.to_s =~ /::s.*Dataqueue/ then
       else
-        file.print <<EOT
-      #{signature.get_name}
-EOT
         signature.each_param{ |decl, paramDecl|
-
           param = paramDecl.get_type.get_type_str
           if param.include?("*") then
             if param.include?("const") then
@@ -254,6 +254,11 @@ EOT
                   char_list << param
                 end
               elsif param.include?("struct") then # [in]: struct*型
+                paramDecl.get_type.get_type.get_members_decl.get_items.each { |decl|
+                  struct_mem << decl.get_name.to_s
+                }
+                struct_mem_list << struct_mem
+                struct_mem = [] # リセット
                 if !struct_list.include?(param) then
                   # struct_list << param.sub(/\*/, '_buf').sub('const ', '')
                   struct_list << param
@@ -282,7 +287,8 @@ EOT
         }
       end
     }
-
+p struct_list
+p struct_mem_list
     file.print <<EOT
   ER    ercd = E_OK;
   CELLCB  *p_cellcb;
@@ -337,7 +343,20 @@ EOT
                     *arg_num = arg_size; // 引数の数をTaskMainに渡す
                     for( j = 0; j < arg_size; j++ ){
                         i += 1; // iは各要素を指す
-                        if( t[i].type == JSMN_ARRAY ){
+                        if( t[i].type == JSMN_OBJECT ){
+                            if( strstr( arguments[j].type, "struct" ) == null ){
+                              printf("Arg %d is not struct type\\n", j+1 );
+                              return -1;
+                            }
+                            array_size =  t[i].size;
+                            for( m = 0; m < array_size; m++ ){
+                                i += 1; // objの中身Tag名に注目
+                                strcpy_n( VAR_tmp_str, t[i].end - t[i].start, VAR_json_str + t[i].start );
+EOT
+    print_struct_list( file, struct_list, struct_mem_list )
+    file.print <<EOT
+                            }
+                        }else if( t[i].type == JSMN_ARRAY ){
                             array_size =  t[i].size;
                             for( m = 0; m < array_size; m++ ){
                                 i += 1; // 配列の中身に注目
@@ -502,7 +521,7 @@ EOT
       end
     }
   end
-  def print_struct_list( file, struct_list )
+  def print_struct_list( file, struct_list, struct_mem_list )
   end
 
   def print_ret_type_list( file, ret_type_list )
@@ -544,6 +563,11 @@ EOT
 
   def gen_preamble( file, b_singleton, ct_name, global_ct_name )
     file.print <<EOT
+#include "tJSMN_tecsgen.h"
+#include <stdio.h>
+#include <jsmn.h>
+#define N 128
+
 static int
 jsoneq( const char *json, jsmntok_t *tok, const char *s);
 static void
