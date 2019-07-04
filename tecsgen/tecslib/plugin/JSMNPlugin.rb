@@ -493,20 +493,20 @@ EOT
 
 
   def print_char_list( file, char_list )
-    char_list.each_with_index{ |obj, idx|
-      if idx == 0 then
-        file.print <<EOT
-                            if( !strcmp(arguments[j].type,"#{obj}") ){
-                                strcpy_n( arguments[j].data.mem_#{obj.sub(/\*/, '_buf').sub('const ', '')}, t[i].end - t[i].start, VAR_json_str + t[i].start );
+    file.print <<EOT
+                            strcpy_n( VAR_tmp_str, t[i].end - t[i].start, VAR_json_str + t[i].start );
+                            if( !strcmp(VAR_tmp_str, "[out]") ){
+                                if( strstr(arguments[j].type,"const") != NULL ){
+                                    printf("Arg %d is not out arguments\\n", j+1 );
+                                    return -1;
+                                }
 EOT
-      else
-        file.print <<EOT
+    char_list.each{ |obj|
+      file.print <<EOT
                             }else if( !strcmp(arguments[j].type,"#{obj}") ){
                                 strcpy_n( arguments[j].data.mem_#{obj.sub(/\*/, '_buf').sub('const ', '')}, t[i].end - t[i].start, VAR_json_str + t[i].start );
 EOT
-      end
     }
-
   end
 
   def print_num_list( file, num_list )
