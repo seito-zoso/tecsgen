@@ -101,10 +101,3 @@ $(_TECS_OBJ_DIR)%.o : %.c
 # 	$(CC) -c $(CFLAGS) -o $@ $<
 
 # $(_TECS_OBJ_DIR)vasyslog.o : vasyslog.c
-
-# .PHONY: insert
-# insert:
-# 	ruby $(TECS_UNIT_RUBY)/insert.rb
-# .PHONY: delete
-# delete:
-# 	ruby $(TECS_UNIT_RUBY)/clean.rb
