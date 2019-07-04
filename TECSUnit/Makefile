@@ -10,11 +10,11 @@
 
 # 変数 #_MVAR_#
 # fixed variable (unchangeable by config or plugin)
-TARGET_BASE = info
+TARGET_BASE = TECSUnit
 BASE_DIR = .
 GEN_DIR = $(BASE_DIR)/gen
 JSMN_DIR = $(BASE_DIR)/jsmn
-INCLUDES = -I $(BASE_DIR)/. -I $(BASE_DIR)/../test/cygwin -I $(TECSPATH) -I $(TECSPATH)/mruby -I $(TECSPATH)/posix -I $(TECSPATH)/rpc -I $(TECSPATH)/TECSInfo -I $(TECSPATH)/TLSFMalloc -I $(GEN_DIR) -I $(JSMN_DIR)
+INCLUDES = -I $(BASE_DIR)/. -I $(BASE_DIR)/../test/cygwin -I $(TECSPATH) -I $(TECSPATH)/mruby -I $(TECSPATH)/posix -I $(TECSPATH)/rpc -I $(TECSPATH)/TECSInfo -I $(TECSPATH)/TLSFMalloc -I $(GEN_DIR) -I $(JSMN_DIR) -I $(BASE_DIR)/target
 DEFINES =
 # TECSUnit の挿入rbファイルディレクトリ
 TECS_UNIT_RUBY = ruby_lib
@@ -56,8 +56,8 @@ PRE_TECSGEN_TARGET =
 POST_TECSGEN_TARGET =
 
 # vpath for C sources and headers
-vpath %.c $(SRC_DIR) $(GEN_DIR)  ../test/cygwin $(TECSPATH) $(TECSPATH)/mruby $(TECSPATH)/posix $(TECSPATH)/rpc $(TECSPATH)/TECSInfo $(TECSPATH)/TLSFMalloc
-vpath %.h $(SRC_DIR) $(GEN_DIR)  ../test/cygwin $(TECSPATH) $(TECSPATH)/mruby $(TECSPATH)/posix $(TECSPATH)/rpc $(TECSPATH)/TECSInfo $(TECSPATH)/TLSFMalloc
+vpath %.c $(SRC_DIR) $(GEN_DIR) ../test/cygwin $(TECSPATH) $(TECSPATH)/mruby $(TECSPATH)/posix $(TECSPATH)/rpc $(TECSPATH)/TECSInfo $(TECSPATH)/TLSFMalloc
+vpath %.h $(SRC_DIR) $(GEN_DIR) ../test/cygwin $(TECSPATH) $(TECSPATH)/mruby $(TECSPATH)/posix $(TECSPATH)/rpc $(TECSPATH)/TECSInfo $(TECSPATH)/TLSFMalloc
 
 # Other objects (out of tecsgen)
 OTHER_OBJS = $(JSMN_DIR)/libjsmn.a              # Add objects out of tecs care.
@@ -89,7 +89,7 @@ clean :
 tecs : $(PRE_TECSGEN_TARGET) $(TIMESTAMP) $(POST_TECSGEN_TARGET)
 
 $(TIMESTAMP) : $(TECS_IMPORTS)
-	$(TECSGEN) -I ../test/cygwin info.cdl
+	$(TECSGEN) -I ../test/cygwin -I $(BASE_DIR)/target/ TECSUnit.cdl
 # generic target for objs
 $(_TECS_OBJ_DIR)%.o : %.c
 	$(CC) -c $(CFLAGS) -o $@ $<

@@ -1,4 +1,10 @@
-import_C("json_struct.h");
+import( <cygwin_kernel.cdl> );
+import( <TECSInfo.cdl> );
+import( <TECSInfoAccessor.cdl> );
+/* ターゲットのインクルード */
+import( <target.cdl> );
+
+import( <jsmn.cdl> );
 
 signature sTECSUnit {
   void main( [in,string] const char_t *cell_path,
@@ -9,50 +15,21 @@ signature sTECSUnit {
              [in] const struct tecsunit_obj *exp_val );
 };
 
-// celltype tTECSUnit {
-//     entry sTECSUnit eUnit;
-//     /*----- TECSInfo -----*/
-//     call nTECSInfo::sTECSInfo cTECSInfo;
-//     [dynamic,optional]
-//       call  nTECSInfo::sNamespaceInfo cNSInfo;
-//     [dynamic,optional]
-//       call  nTECSInfo::sRegionInfo    cRegionInfo;
-//     [dynamic,optional]
-//       call  nTECSInfo::sCellInfo      cCellInfo;
-//     [dynamic,optional]
-//       call  nTECSInfo::sSignatureInfo cSignatureInfo;
-//     [dynamic,optional]
-//       call  nTECSInfo::sCelltypeInfo  cCelltypeInfo;
-//     [dynamic,optional]
-//       call  nTECSInfo::sVarDeclInfo   cVarDeclInfo;
-//     [dynamic,optional]
-//       call  nTECSInfo::sTypeInfo      cTypeInfo;
-//     /* ----- TECSInfo ----- */
+import( <tTaskMain.cdl> );
 
-//     /*----- RawEntryDescriptor -----*/
-//     [dynamic,optional]
-//       call  nTECSInfo::sRawEntryDescriptorInfo   cREDInfo;
-//     [dynamic,optional]
-//       call  nTECSInfo::sEntryInfo     cEntryInfo;
-//     /*----- RawEntryDescriptor -----*/
+generate( TECSUnitPlugin, rTEMP::TaskMain, "" );
+generate( JSMNPlugin, rTEMP::TaskMain, "" );
 
-//     /*----- TECSUnit test -----*/
-//       /* ここはプラグインにより自動生成される予定 */
-//     [dynamic, optional]
-//       call sTarget1 cUnitTest1;
-//     [dynamic, optional]
-//       call sTarget2 cUnitTest2;
-//     /*----- /TECSUnit test -----*/
+region rTEMP{
 
-//     attr {
-//       int16_t LEN = 256;
-//     };
-//     var {
-//       int16_t i_ret;
-//       double64_t d_ret;
-//       [size_is(LEN)]
-//         char *char_ret;
-//       [size_is(LEN)]
-//         char *cell_entry;
-//     };
-// };
+    cell tTECSUnit TECSUnit {
+        cTECSInfo  = TECSInfo.eTECSInfo;
+    };
+    cell tJSMN JSMN {
+    };
+/******* TECSInfo cell *******/
+    cell nTECSInfo::tTECSInfo TECSInfo {
+        // cTECSInfo = rTECSInfo::TECSInfoSub.eTECSInfo;
+        //  この結合は TECSInfoPlugin により生成されるので結合不要
+    };
+};

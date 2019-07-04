@@ -32,6 +32,6 @@
     "entry":"eTarget3",
     "function":"sendStruct",
     "argument":[{"number":1,"name":"aoki"}], // 理想の形。tag名を入れるのも
-    "exp_val":0 // TODO E_OKは入れれない
+    "exp_val":0// TODO E_OKは入れれない
   }
 }

@@ -1,15 +1,6 @@
-import( <cygwin_kernel.cdl> );
-import( <TECSInfo.cdl> );
-import( <TECSInfoAccessor.cdl> );
-import("target.cdl");
-import("TECSUnit.cdl");
-import("jsmn.cdl");
-
-
 celltype tTaskMain {
     entry sTaskBody            eBody;
     call  sTECSUnit            cUnit;
-    // TODO：いるのかいらんのか
     call  sJSMN                cJSMN;
 
     call  nTECSInfo::sTECSInfo cTECSInfo;
@@ -80,21 +71,5 @@ region rTEMP{
         cUnit = TECSUnit.eUnit;
         // この結合は TECSUnitPlugin により自動生成される
         cJSMN = JSMN.eJSMN;
-    };
-};
-generate( TECSUnitPlugin, rTEMP::TaskMain, "" );
-generate( JSMNPlugin, rTEMP::TaskMain, "" );
-
-region rTEMP{
-
-    cell tTECSUnit TECSUnit {
-        cTECSInfo  = TECSInfo.eTECSInfo;
-    };
-    cell tJSMN JSMN {
-    };
-/******* TECSInfo cell *******/
-    cell nTECSInfo::tTECSInfo TECSInfo {
-        // cTECSInfo = rTECSInfo::TECSInfoSub.eTECSInfo;
-        //  この結合は TECSInfoPlugin により生成されるので結合不要
     };
 };
